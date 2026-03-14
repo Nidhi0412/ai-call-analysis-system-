@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ title }}</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+        
+        .content {
+            padding: 40px;
+        }
+        
+        .upload-section {
+            margin-bottom: 30px;
+        }
+        
+        .upload-section h2 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 1.5em;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #555;
+        }
+        
+        .form-group select,
+        .form-group input[type="file"] {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e1e5e9;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s ease;
+        }
+        
+        .form-group select:focus,
+        .form-group input[type="file"]:focus {
+            outline: none;
+            border-color: #4facfe;
+        }
+        
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        
+        .checkbox-group input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+        }
+        
+        .provider-info {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .provider-info h3 {
+            color: #333;
+            margin-bottom: 15px;
+        }
+        
+        .provider-card {
+            background: white;
+            border: 1px solid #e1e5e9;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 10px;
+        }
+        
+        .provider-card h4 {
+            color: #4facfe;
+            margin-bottom: 8px;
+        }
+        
+        .provider-card .status {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.8em;
+            font-weight: 600;
+        }
+        
+        .provider-card .status.available {
+            background: #d4edda;
+            color: #155724;
+        }
+        
+        .provider-card .status.unavailable {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        
+        .upload-btn {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s ease;
+            width: 100%;
+        }
+        
+        .upload-btn:hover {
+            transform: translateY(-2px);
+        }
+        
+        .upload-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .loading {
+            display: none;
+            text-align: center;
+            margin-top: 20px;
+        }
+        
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #4facfe;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+            display: none;
+        }
+        
+        .success {
+            background: #d4edda;
+            color: #155724;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+            display: none;
+        }
+        
+        .cost-info {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 20px;
+        }
+        
+        .cost-info h4 {
+            color: #856404;
+            margin-bottom: 10px;
+        }
+        
+        .cost-comparison {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-top: 10px;
+        }
+        
+        .cost-item {
+            background: white;
+            padding: 10px;
+            border-radius: 6px;
+            text-align: center;
+        }
+        
+        .cost-item .provider {
+            font-weight: 600;
+            color: #333;
+        }
+        
+        .cost-item .rate {
+            color: #4facfe;
+            font-size: 1.2em;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎙️ Call Recordings AI</h1>
+            <p>Groq Multi-Provider Whisper Transcription</p>
+        </div>
+        
+        <div class="content">
+            <div class="upload-section">
+                <h2>Upload Audio File</h2>
+                
+                <form id="uploadForm" enctype="multipart/form-data">
+                    <div class="form-group">
+                        <label for="audioFile">Select Audio File:</label>
+                        <input type="file" id="audioFile" name="file" accept="audio/*" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="provider">Whisper Provider:</label>
+                        <select id="provider" name="provider">
+                            <option value="auto">Auto-detect (Recommended)</option>
+                            {% for provider_name, provider_info in providers.items() %}
+                            <option value="{{ provider_name }}" 
+                                    {% if provider_info.available %}data-available="true"{% endif %}
+                                    {% if not provider_info.available %}disabled{% endif %}>
+                                {{ provider_info.name }}
+                                {% if provider_info.available %}✓{% else %}✗{% endif %}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="model">Model (Auto-selected based on provider):</label>
+                        <select id="model" name="model">
+                            <option value="">Auto-select</option>
+                        </select>
+                    </div>
+                    
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="useAdvancedDiarization" name="use_advanced_diarization">
+                        <label for="useAdvancedDiarization">Use Advanced Speaker Diarization</label>
+                    </div>
+                    
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="useHinglish" name="use_hinglish">
+                        <label for="useHinglish">Transcribe to Hinglish (Hindi in English script)</label>
+                    </div>
+                    
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="analyzeAudio" name="analyze_audio" checked>
+                        <label for="analyzeAudio">Perform Audio Quality Analysis</label>
+                    </div>
+                    
+                    <button type="submit" class="upload-btn" id="uploadBtn">
+                        🚀 Start Transcription
+                    </button>
+                </form>
+                
+                <div class="loading" id="loading">
+                    <div class="spinner"></div>
+                    <p>Processing your audio file...</p>
+                </div>
+                
+                <div class="error" id="error"></div>
+                <div class="success" id="success"></div>
+            </div>
+            
+            <div class="provider-info">
+                <h3>Available Providers</h3>
+                {% for provider_name, provider_info in providers.items() %}
+                <div class="provider-card">
+                    <h4>{{ provider_info.name }}</h4>
+                    <p><strong>Models:</strong> {{ provider_info.models | join(', ') }}</p>
+                    <p><strong>Default:</strong> {{ provider_info.default_model }}</p>
+                    <p><strong>Cost:</strong> ${{ "%.4f"|format(provider_info.cost_per_minute) }}/minute</p>
+                    <span class="status {% if provider_info.available %}available{% else %}unavailable{% endif %}">
+                        {% if provider_info.available %}Available{% else %}API Key Required{% endif %}
+                    </span>
+                </div>
+                {% endfor %}
+            </div>
+            
+            <div class="cost-info">
+                <h4>💰 Cost Comparison</h4>
+                <div class="cost-comparison">
+                    {% for provider_name, provider_info in providers.items() %}
+                    <div class="cost-item">
+                        <div class="provider">{{ provider_info.name }}</div>
+                        <div class="rate">${{ "%.4f"|format(provider_info.cost_per_minute) }}/min</div>
+                    </div>
+                    {% endfor %}
+                </div>
+                <p style="margin-top: 10px; font-size: 0.9em; color: #856404;">
+                    💡 Groq offers faster processing and lower costs with generous free tier!
+                </p>
+            </div>
+        </div>
+    </div>
+    
+    <script type="application/json" id="providers-data">{{ providers | tojson }}</script>
+    <script>
+        // Provider and model data
+        const providers = JSON.parse(document.getElementById('providers-data').textContent);
+        
+        // Update model options based on selected provider
+        document.getElementById('provider').addEventListener('change', function() {
+            const provider = this.value;
+            const modelSelect = document.getElementById('model');
+            
+            // Clear existing options
+            modelSelect.innerHTML = '<option value="">Auto-select</option>';
+            
+            if (provider !== 'auto' && providers[provider]) {
+                const models = providers[provider].models;
+                models.forEach(model => {
+                    const option = document.createElement('option');
+                    option.value = model;
+                    option.textContent = model;
+                    if (model === providers[provider].default_model) {
+                        option.textContent += ' (Default)';
+                    }
+                    modelSelect.appendChild(option);
+                });
+            }
+        });
+        
+        // Handle form submission
+        document.getElementById('uploadForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(this);
+            const uploadBtn = document.getElementById('uploadBtn');
+            const loading = document.getElementById('loading');
+            const error = document.getElementById('error');
+            const success = document.getElementById('success');
+            
+            // Hide previous messages
+            error.style.display = 'none';
+            success.style.display = 'none';
+            
+            // Show loading
+            uploadBtn.disabled = true;
+            loading.style.display = 'block';
+            
+            try {
+                const response = await fetch('/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    success.innerHTML = `
+                        <strong>✅ Upload Successful!</strong><br>
+                        Session ID: ${result.session_id}<br>
+                        Provider: ${result.provider}<br>
+                        <a href="/status/${result.session_id}" style="color: #155724;">View Status</a>
+                    `;
+                    success.style.display = 'block';
+                    
+                    // Redirect to status page after 2 seconds
+                    setTimeout(() => {
+                        window.location.href = `/status/${result.session_id}`;
+                    }, 2000);
+                } else {
+                    throw new Error(result.error || 'Upload failed');
+                }
+            } catch (err) {
+                error.innerHTML = `<strong>❌ Error:</strong> ${err.message}`;
+                error.style.display = 'block';
+            } finally {
+                uploadBtn.disabled = false;
+                loading.style.display = 'none';
+            }
+        });
+        
+        // Initialize model options
+        document.getElementById('provider').dispatchEvent(new Event('change'));
+    </script>
+</body>
+</html>

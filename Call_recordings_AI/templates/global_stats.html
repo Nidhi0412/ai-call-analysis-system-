@@ -1,0 +1,824 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>📊 Global Results Statistics</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            margin: 0;
+            font-size: 2.5em;
+            font-weight: 300;
+        }
+        
+        .header p {
+            margin: 10px 0 0 0;
+            opacity: 0.9;
+            font-size: 1.1em;
+        }
+        
+        .content {
+            padding: 40px;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .stat-card {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 25px;
+            text-align: center;
+            border-left: 5px solid #4CAF50;
+            transition: transform 0.3s ease;
+        }
+        
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        }
+        
+        .stat-card h3 {
+            margin: 0 0 15px 0;
+            color: #333;
+            font-size: 1.2em;
+        }
+        
+        .stat-value {
+            font-size: 2.5em;
+            font-weight: bold;
+            color: #4CAF50;
+            margin: 10px 0;
+        }
+        
+        .stat-label {
+            color: #666;
+            font-size: 0.9em;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .info-section {
+            background: #e8f5e8;
+            border-radius: 10px;
+            padding: 25px;
+            margin-bottom: 30px;
+            border-left: 5px solid #4CAF50;
+        }
+        
+        .info-section h3 {
+            margin: 0 0 15px 0;
+            color: #2e7d32;
+        }
+        
+        .info-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #c8e6c9;
+        }
+        
+        .info-item:last-child {
+            border-bottom: none;
+        }
+        
+        .info-label {
+            font-weight: bold;
+            color: #333;
+        }
+        
+        .info-value {
+            color: #666;
+            font-family: monospace;
+        }
+        
+        .action-buttons {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        
+        .btn {
+            padding: 12px 25px;
+            border: none;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: bold;
+            font-size: 1em;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        
+        .btn-primary {
+            background: #2196F3;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: #1976D2;
+            transform: translateY(-2px);
+        }
+        
+        .btn-success {
+            background: #4CAF50;
+            color: white;
+        }
+        
+        .btn-success:hover {
+            background: #45a049;
+            transform: translateY(-2px);
+        }
+        
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+        
+        .btn-secondary:hover {
+            background: #5a6268;
+            transform: translateY(-2px);
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #666;
+        }
+        
+        .empty-state h2 {
+            color: #999;
+            margin-bottom: 20px;
+        }
+        
+        .empty-state p {
+            font-size: 1.1em;
+            line-height: 1.6;
+        }
+        
+        .back-link {
+            display: inline-block;
+            margin-top: 30px;
+            color: #2196F3;
+            text-decoration: none;
+            font-weight: bold;
+        }
+        
+        .back-link:hover {
+            text-decoration: underline;
+        }
+        
+        .status-badge {
+            display: inline-block;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.9em;
+            font-weight: bold;
+        }
+        
+        .status-active {
+            background: #d4edda;
+            color: #155724;
+        }
+        
+        .status-inactive {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        
+        @media (max-width: 768px) {
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .action-buttons {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .btn {
+                width: 100%;
+                max-width: 300px;
+            }
+        }
+        
+        .btn-danger {
+            background: #dc3545;
+            color: white;
+        }
+        
+        .btn-danger:hover {
+            background: #c82333;
+            transform: translateY(-2px);
+        }
+        
+        .confirmation-dialog {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        
+        .confirmation-content {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            max-width: 500px;
+            text-align: center;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+        }
+        
+        .confirmation-content h3 {
+            color: #dc3545;
+            margin-bottom: 20px;
+        }
+        
+        .confirmation-content p {
+            margin-bottom: 20px;
+            line-height: 1.6;
+        }
+        
+        .confirmation-buttons {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+        }
+        
+        .btn-confirm {
+            background: #dc3545;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        
+        .btn-cancel {
+            background: #6c757d;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        
+        .btn-confirm:hover {
+            background: #c82333;
+        }
+        
+        .btn-cancel:hover {
+            background: #5a6268;
+        }
+        
+        .fresh-indicator {
+            background: linear-gradient(135deg, #e8f5e8, #f0f8f0);
+            border: 2px solid #28a745;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+            text-align: center;
+            box-shadow: 0 4px 8px rgba(40, 167, 69, 0.2);
+        }
+        
+        .fresh-badge {
+            background: #28a745;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 14px;
+            display: inline-block;
+            margin-bottom: 10px;
+            animation: pulse 2s infinite;
+        }
+        
+        .fresh-text {
+            margin: 0;
+            color: #155724;
+            font-size: 14px;
+        }
+        
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+        
+        .reset-history {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        
+        .reset-history h3 {
+            color: #495057;
+            margin-bottom: 15px;
+        }
+        
+        .reset-item {
+            background: white;
+            border: 1px solid #e9ecef;
+            border-radius: 6px;
+            padding: 15px;
+            margin: 10px 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .reset-info {
+            flex: 1;
+        }
+        
+        .reset-date {
+            font-weight: bold;
+            color: #dc3545;
+        }
+        
+        .reset-stats {
+            font-size: 12px;
+            color: #6c757d;
+        }
+        
+        .reset-days {
+            background: #e9ecef;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            color: #495057;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📊 Global Results Statistics</h1>
+            <p>Comprehensive overview of your call analysis database</p>
+            
+            <!-- Fresh CSV Indicator -->
+            {% if csv_insights and csv_insights.csv_info and csv_insights.csv_info.is_fresh %}
+            <div class="fresh-indicator">
+                <div class="fresh-badge">
+                    🆕 Fresh Dataset
+                </div>
+                <p class="fresh-text">
+                    This CSV was recently reset and contains fresh data starting from 
+                    <strong>{{ csv_insights.csv_info.created_date }}</strong>
+                </p>
+            </div>
+            {% endif %}
+        </div>
+        
+        <div class="content">
+            {% if csv_exists %}
+                <!-- Business Intelligence Dashboard -->
+                {% if csv_stats.insights and not csv_stats.insights.error %}
+                    <!-- Agent Performance -->
+                    {% if csv_stats.insights.agent_performance %}
+                    <div class="info-section">
+                        <h3>👨‍💼 Agent Performance Overview</h3>
+                        <div class="stats-grid">
+                            <div class="stat-card">
+                                <h3>⭐ Average Score</h3>
+                                <div class="stat-value">{{ csv_stats.insights.agent_performance.avg_score }}/10</div>
+                                <div class="stat-label">Overall Performance</div>
+                            </div>
+                            <div class="stat-card">
+                                <h3>🏆 Excellent Calls</h3>
+                                <div class="stat-value">{{ csv_stats.insights.agent_performance.excellent_calls }}</div>
+                                <div class="stat-label">Score ≥ 8</div>
+                            </div>
+                            <div class="stat-card">
+                                <h3>✅ Good Calls</h3>
+                                <div class="stat-value">{{ csv_stats.insights.agent_performance.good_calls }}</div>
+                                <div class="stat-label">Score 6-7</div>
+                            </div>
+                            <div class="stat-card">
+                                <h3>⚠️ Needs Improvement</h3>
+                                <div class="stat-value">{{ csv_stats.insights.agent_performance.poor_calls }}</div>
+                                <div class="stat-label">Score < 6</div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    <!-- Customer Satisfaction -->
+                    {% if csv_stats.insights.customer_satisfaction %}
+                    <div class="info-section">
+                        <h3>😊 Customer Satisfaction Analysis</h3>
+                        <div class="stats-grid">
+                            <div class="stat-card">
+                                <h3>🎯 Satisfaction Rate</h3>
+                                <div class="stat-value">{{ csv_stats.insights.customer_satisfaction.satisfaction_rate }}%</div>
+                                <div class="stat-label">Satisfied + Very Satisfied</div>
+                            </div>
+                            <div class="stat-card">
+                                <h3>😍 Very Satisfied</h3>
+                                <div class="stat-value">{{ csv_stats.insights.customer_satisfaction.very_satisfied }}</div>
+                                <div class="stat-label">Customers</div>
+                            </div>
+                            <div class="stat-card">
+                                <h3>😊 Satisfied</h3>
+                                <div class="stat-value">{{ csv_stats.insights.customer_satisfaction.satisfied }}</div>
+                                <div class="stat-label">Customers</div>
+                            </div>
+                            <div class="stat-card">
+                                <h3>😐 Neutral/Dissatisfied</h3>
+                                <div class="stat-value">{{ csv_stats.insights.customer_satisfaction.neutral + csv_stats.insights.customer_satisfaction.dissatisfied }}</div>
+                                <div class="stat-label">Customers</div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    <!-- Issue Analysis -->
+                    {% if csv_stats.insights.issue_analysis %}
+                    <div class="info-section">
+                        <h3>🔍 Issue Analysis & Resolution</h3>
+                        <div class="stats-grid">
+                            <div class="stat-card">
+                                <h3>✅ Resolution Rate</h3>
+                                <div class="stat-value">{{ csv_stats.insights.issue_analysis.resolution_rate }}%</div>
+                                <div class="stat-label">Issues Resolved</div>
+                            </div>
+                            <div class="stat-card">
+                                <h3>📊 Issue Types</h3>
+                                <div class="stat-value">{{ csv_stats.insights.issue_analysis.total_issue_types }}</div>
+                                <div class="stat-label">Different Categories</div>
+                            </div>
+                        </div>
+                        {% if csv_stats.insights.issue_analysis.top_issues %}
+                        <h4>🔥 Top Issue Categories:</h4>
+                        <ul>
+                        {% for issue, count in csv_stats.insights.issue_analysis.top_issues.items() %}
+                            <li><strong>{{ issue }}:</strong> {{ count }} calls</li>
+                        {% endfor %}
+                        </ul>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                    
+                    <!-- Query Trends -->
+                    {% if csv_stats.insights.query_trends %}
+                    <div class="info-section">
+                        <h3>📞 Query Trends & Patterns</h3>
+                        {% if csv_stats.insights.query_trends.top_query_types %}
+                        <h4>🎯 Most Common Query Types:</h4>
+                        <ul>
+                        {% for query_type, count in csv_stats.insights.query_trends.top_query_types.items() %}
+                            <li><strong>{{ query_type }}:</strong> {{ count }} calls</li>
+                        {% endfor %}
+                        </ul>
+                        {% endif %}
+                        {% if csv_stats.insights.query_trends.complexity_distribution %}
+                        <h4>🧩 Query Complexity Distribution:</h4>
+                        <ul>
+                        {% for complexity, count in csv_stats.insights.query_trends.complexity_distribution.items() %}
+                            <li><strong>{{ complexity }}:</strong> {{ count }} calls</li>
+                        {% endfor %}
+                        </ul>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                    
+                    <!-- Business Insights -->
+                    {% if csv_stats.insights.business_insights %}
+                    <div class="info-section">
+                        <h3>🏢 Business Intelligence</h3>
+                        <div class="stats-grid">
+                            <div class="stat-card">
+                                <h3>🏨 Properties</h3>
+                                <div class="stat-value">{{ csv_stats.insights.business_insights.unique_properties }}</div>
+                                <div class="stat-label">Unique Properties</div>
+                            </div>
+                            <div class="stat-card">
+                                <h3>💳 Billing Issues</h3>
+                                <div class="stat-value">{{ csv_stats.insights.business_insights.billing_issues_count }}</div>
+                                <div class="stat-label">Calls with Issues</div>
+                            </div>
+                        </div>
+                        {% if csv_stats.insights.business_insights.most_common_property %}
+                        <p><strong>Most Active Property:</strong> {{ csv_stats.insights.business_insights.most_common_property }}</p>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                    
+                    <!-- Call Quality -->
+                    {% if csv_stats.insights.call_quality %}
+                    <div class="info-section">
+                        <h3>🎭 Call Quality & Atmosphere</h3>
+                        <div class="stats-grid">
+                            <div class="stat-card">
+                                <h3>👔 Professional</h3>
+                                <div class="stat-value">{{ csv_stats.insights.call_quality.professional_calls }}</div>
+                                <div class="stat-label">Professional Calls</div>
+                            </div>
+                            <div class="stat-card">
+                                <h3>😊 Friendly</h3>
+                                <div class="stat-value">{{ csv_stats.insights.call_quality.friendly_calls }}</div>
+                                <div class="stat-label">Friendly Calls</div>
+                            </div>
+                            <div class="stat-card">
+                                <h3>⚠️ Conflicts</h3>
+                                <div class="stat-value">{{ csv_stats.insights.call_quality.conflict_rate }}%</div>
+                                <div class="stat-label">Calls with Conflicts</div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    <!-- Language Analysis -->
+                    {% if csv_stats.insights.language_analysis %}
+                    <div class="info-section">
+                        <h3>🌍 Language Distribution</h3>
+                        <h4>🗣️ Top Languages:</h4>
+                        <ul>
+                        {% for language, count in csv_stats.insights.language_analysis.top_languages.items() %}
+                            <li><strong>{{ language }}:</strong> {{ count }} calls</li>
+                        {% endfor %}
+                        </ul>
+                        <p><strong>Total Languages Supported:</strong> {{ csv_stats.insights.language_analysis.total_languages }}</p>
+                    </div>
+                    {% endif %}
+                    
+                {% else %}
+                    <!-- Fallback to basic stats if insights analysis fails -->
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <h3>📈 Total Analyses</h3>
+                            <div class="stat-value">{{ csv_stats.total_analyses }}</div>
+                            <div class="stat-label">Call Records</div>
+                        </div>
+                        
+                        <div class="stat-card">
+                            <h3>💾 File Size</h3>
+                            <div class="stat-value">{{ csv_stats.file_size_mb }} MB</div>
+                            <div class="stat-label">Database Size</div>
+                        </div>
+                        
+                        <div class="stat-card">
+                            <h3>📅 Days Active</h3>
+                            <div class="stat-value">{{ csv_stats.days_active }}</div>
+                            <div class="stat-label">Days Since Created</div>
+                        </div>
+                        
+                        <div class="stat-card">
+                            <h3>📊 Avg Size</h3>
+                            <div class="stat-value">{{ csv_stats.avg_size_per_analysis }} MB</div>
+                            <div class="stat-label">Per Analysis</div>
+                        </div>
+                        
+                        {% if csv_insights and csv_insights.csv_info %}
+                        <div class="stat-card">
+                            <h3>📅 Created</h3>
+                            <div class="stat-value">{{ csv_insights.csv_info.created_date.split(' ')[0] }}</div>
+                            <div class="stat-label">{{ csv_insights.csv_info.created_date.split(' ')[1] }}</div>
+                        </div>
+                        
+                        <div class="stat-card">
+                            <h3>🔄 Last Modified</h3>
+                            <div class="stat-value">{{ csv_insights.csv_info.last_modified.split(' ')[0] }}</div>
+                            <div class="stat-label">{{ csv_insights.csv_info.last_modified.split(' ')[1] }}</div>
+                        </div>
+                        {% endif %}
+                    </div>
+                {% endif %}
+                
+                <!-- Detailed Information -->
+                <div class="info-section">
+                    <h3>📋 Database Details</h3>
+                    <div class="info-item">
+                        <span class="info-label">Status:</span>
+                        <span class="status-badge status-active">🟢 Active & Growing</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Last Updated:</span>
+                        <span class="info-value">{{ csv_stats.last_modified }}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">File Location:</span>
+                        <span class="info-value">{{ csv_stats.csv_path }}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Data Points:</span>
+                        <span class="info-value">{{ csv_stats.total_analyses * 70 }}+ columns per analysis</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Auto-Append:</span>
+                        <span class="info-value">✅ Enabled</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Persistence:</span>
+                        <span class="info-value">✅ Survives Restarts</span>
+                    </div>
+                </div>
+                
+                <!-- Action Buttons -->
+                <div class="action-buttons">
+                    <a href="/innex/download-global-results" class="btn btn-primary">
+                        📥 Download Complete Dataset
+                    </a>
+                    <a href="/innex/csv-management" class="btn btn-success">
+                        🛠️ CSV Management Dashboard
+                    </a>
+                    <a href="/innex/transcribe-ui" class="btn btn-secondary">
+                        🎤 Upload More Files
+                    </a>
+                    <button onclick="resetGlobalCSV()" class="btn btn-danger" style="background: #dc3545;">
+                        🔄 Reset Global CSV
+                    </button>
+                </div>
+                
+                <!-- Reset History -->
+                {% if reset_history and reset_history.has_backups %}
+                <div class="reset-history">
+                    <h3>🔄 Recent Reset History</h3>
+                    <p>Your CSV has been reset {{ reset_history.total_backups }} time(s). Here are the recent backups:</p>
+                    
+                    {% for reset in reset_history.recent_resets %}
+                    <div class="reset-item">
+                        <div class="reset-info">
+                            <div class="reset-date">{{ reset.timestamp }}</div>
+                            <div class="reset-stats">
+                                📊 {{ reset.rows_backed_up }} analyses backed up • 
+                                💾 {{ reset.file_size_mb }} MB • 
+                                📁 {{ reset.filename }}
+                            </div>
+                        </div>
+                        <div class="reset-days">
+                            {% if reset.days_ago == 0 %}
+                                Today
+                            {% elif reset.days_ago == 1 %}
+                                Yesterday
+                            {% else %}
+                                {{ reset.days_ago }} days ago
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                    
+                    <p style="margin-top: 15px; font-size: 12px; color: #6c757d;">
+                        💡 Backups are stored in: Call_recordings_AI/.cache/backups/
+                    </p>
+                </div>
+                {% endif %}
+                
+                <!-- Additional Info -->
+                <div class="info-section">
+                    <h3>💡 What's Included</h3>
+                    <p>Your global CSV contains comprehensive data for each analysis:</p>
+                    <ul style="margin: 15px 0; padding-left: 20px;">
+                        <li><strong>Complete Transcription:</strong> Full conversation text with speaker identification</li>
+                        <li><strong>AI Analysis:</strong> Call insights, customer satisfaction, agent performance</li>
+                        <li><strong>Performance Metrics:</strong> Processing times, bottlenecks, optimization data</li>
+                        <li><strong>Cost Tracking:</strong> Token usage and estimated costs for each operation</li>
+                        <li><strong>Business Intelligence:</strong> Query analysis, resolution tracking, trend data</li>
+                    </ul>
+                    <p><strong>Perfect for:</strong> Customer support reporting, agent training, quality assurance, compliance audits, and business intelligence.</p>
+                </div>
+                
+            {% else %}
+                <!-- Empty State -->
+                <div class="empty-state">
+                    <h2>📊 No Data Yet</h2>
+                    <p>{{ message or "Your global CSV database hasn't been created yet." }}</p>
+                    <p>Upload and process your first audio file to start building your comprehensive call analysis database.</p>
+                    
+                    <div class="action-buttons">
+                        <a href="/innex/transcribe-ui" class="btn btn-primary">
+                            🎤 Start Your First Analysis
+                        </a>
+                        <a href="/innex/csv-management" class="btn btn-secondary">
+                            🛠️ CSV Management
+                        </a>
+                    </div>
+                </div>
+            {% endif %}
+            
+            <div style="text-align: center; margin-top: 40px;">
+                <a href="/innex/transcribe-ui" class="back-link">← Back to Transcription UI</a>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Confirmation Dialog -->
+    <div id="confirmationDialog" class="confirmation-dialog">
+        <div class="confirmation-content">
+            <h3>⚠️ Reset Global CSV</h3>
+            <p><strong>Are you sure you want to reset the global CSV?</strong></p>
+            <p>This action will:</p>
+            <ul style="text-align: left; margin: 15px 0;">
+                <li>✅ Create a backup of your current data</li>
+                <li>🗑️ Delete all existing analysis records</li>
+                <li>🆕 Start fresh with a new empty CSV</li>
+                <li>📊 Reset all statistics to zero</li>
+            </ul>
+            <p><strong>This action cannot be undone!</strong></p>
+            <div class="confirmation-buttons">
+                <button onclick="confirmReset()" class="btn-confirm">
+                    🔄 Yes, Reset CSV
+                </button>
+                <button onclick="cancelReset()" class="btn-cancel">
+                    ❌ Cancel
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        function resetGlobalCSV() {
+            document.getElementById('confirmationDialog').style.display = 'flex';
+        }
+        
+        function cancelReset() {
+            document.getElementById('confirmationDialog').style.display = 'none';
+        }
+        
+        function confirmReset() {
+            // Show loading state
+            const confirmBtn = document.querySelector('.btn-confirm');
+            const originalText = confirmBtn.innerHTML;
+            confirmBtn.innerHTML = '⏳ Resetting...';
+            confirmBtn.disabled = true;
+            
+            // Send reset request
+            fetch('/innex/reset-global-csv', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    // Show success message
+                    alert('✅ Global CSV reset successfully!\n\n' +
+                          '📁 Backup created: ' + (data.backup_created || 'No backup needed') + '\n' +
+                          '🆕 Fresh CSV ready for new data\n\n' +
+                          'The page will refresh to show the new empty state.');
+                    
+                    // Refresh page to show new state
+                    location.reload();
+                } else {
+                    alert('❌ Error resetting CSV: ' + data.message);
+                    confirmBtn.innerHTML = originalText;
+                    confirmBtn.disabled = false;
+                }
+            })
+            .catch(error => {
+                alert('❌ Error resetting CSV: ' + error.message);
+                confirmBtn.innerHTML = originalText;
+                confirmBtn.disabled = false;
+            })
+            .finally(() => {
+                document.getElementById('confirmationDialog').style.display = 'none';
+            });
+        }
+        
+        // Close dialog when clicking outside
+        document.getElementById('confirmationDialog').addEventListener('click', function(e) {
+            if (e.target === this) {
+                cancelReset();
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,881 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Transcribe Audio with Speakers</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 40px; }
+        .container { max-width: 1000px; margin: auto; }
+        .result { background: #f4f4f4; padding: 20px; border-radius: 8px; margin-top: 20px; }
+        .filename { color: #888; font-size: 0.9em; }
+        .upload-form { margin-bottom: 20px; }
+        .speaker-segment { 
+            margin: 10px 0; 
+            padding: 10px; 
+            border-left: 4px solid #007bff; 
+            background: white; 
+            border-radius: 4px;
+        }
+        .agent { border-left-color: #28a745; }
+        .caller { border-left-color: #dc3545; }
+        .timestamp { color: #666; font-size: 0.8em; }
+        .speaker-label { 
+            font-weight: bold; 
+            color: #333; 
+            margin-bottom: 5px;
+        }
+        .agent .speaker-label { color: #28a745; }
+        .caller .speaker-label { color: #dc3545; }
+        .stats { 
+            background: #e9ecef; 
+            padding: 15px; 
+            border-radius: 4px; 
+            margin: 10px 0;
+        }
+        .simple-text { 
+            background: white; 
+            padding: 15px; 
+            border-radius: 4px; 
+            margin: 10px 0;
+            border-left: 4px solid #007bff;
+        }
+        .hindi-options {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            padding: 15px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        .debug-results {
+            background: #d1ecf1;
+            border: 1px solid #bee5eb;
+            padding: 15px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        .token-usage {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            padding: 15px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        .quality-score {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-weight: bold;
+            margin: 2px;
+        }
+        .score-good { background: #d4edda; color: #155724; }
+        .score-moderate { background: #fff3cd; color: #856404; }
+        .score-poor { background: #f8d7da; color: #721c24; }
+        .method-badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.8em;
+            font-weight: bold;
+            margin: 2px;
+        }
+        .method-enhanced { background: #007bff; color: white; }
+        .method-standard { background: #6c757d; color: white; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div id="progress-status" style="display:none; margin-top:20px; text-align:center;">
+      <div style="background: #fff3cd; border: 1px solid #ffeaa7; padding: 20px; border-radius: 8px; margin-bottom: 15px;">
+        <b>⏳ Processing... Please wait. This may take several minutes for large files.</b>
+        <div style="margin-top: 15px;">
+          <button id="stop-processing-btn" onclick="stopProcessing()" 
+                  style="background: #dc3545; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold;">
+            🛑 Stop Processing
+          </button>
+        </div>
+        <div id="stop-message" style="display:none; margin-top: 10px; color: #dc3545; font-weight: bold;">
+          ⚠️ Processing will be stopped. You can upload a new file.
+        </div>
+      </div>
+    </div>
+    <h2>🎤 Transcribe Audio with Speaker Identification</h2>
+    
+    <!-- Global CSV Management Panel -->
+    <div style="margin-bottom: 20px; padding: 15px; background: #e3f2fd; border-radius: 8px; border-left: 4px solid #2196f3;">
+        <h4 style="margin: 0 0 10px 0; color: #1976d2;">📊 Global Results Management</h4>
+        <p style="margin: 5px 0; color: #666;">
+            <strong>🌍 Global CSV:</strong> All analyses are automatically saved to a central database file. 
+            This persists across application restarts and grows with each new analysis.
+        </p>
+        <div style="margin: 10px 0;">
+            <a href="/innex/download-global-results" 
+               style="background: #2196f3; color: white; padding: 8px 16px; text-decoration: none; border-radius: 4px; display: inline-block; margin-right: 10px;">
+                📥 Download All Results
+            </a>
+            <a href="/innex/csv-management" 
+               style="background: #9c27b0; color: white; padding: 8px 16px; text-decoration: none; border-radius: 4px; display: inline-block; margin-right: 10px;">
+                🛠️ CSV Management
+            </a>
+            <a href="/innex/global-results-info" 
+               style="background: #4caf50; color: white; padding: 8px 16px; text-decoration: none; border-radius: 4px; display: inline-block; margin-right: 10px;">
+                📊 View Statistics
+            </a>
+            <button onclick="resetGlobalCSV()" 
+                    style="background: #dc3545; color: white; padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">
+                🔄 Reset Global CSV
+            </button>
+        </div>
+        <small style="color: #666;">
+            💡 <strong>Tip:</strong> The global CSV contains all your analyses in one file, perfect for comprehensive reporting and trend analysis.
+        </small>
+    </div>
+    
+    <form class="upload-form" action="/innex/transcribe-ui" method="post" enctype="multipart/form-data">
+        <div>
+            <input type="file" name="file" accept="audio/wav" required>
+        </div>
+        
+        <div class="language-options">
+            <h4>🌍 Language Options</h4>
+            <div>
+                <label for="language_override">
+                    <strong>Language Override (Optional):</strong> If auto-detection fails, manually specify the language
+                </label>
+                <select id="language_override" name="language_override" style="margin-left: 10px; padding: 5px;">
+                    <option value="">Auto-detect (Recommended)</option>
+                    <option value="en">English</option>
+                    <option value="hi">Hindi</option>
+                    <option value="te">Telugu</option>
+                    <option value="ta">Tamil</option>
+                    <option value="kn">Kannada</option>
+                    <option value="ml">Malayalam</option>
+                    <option value="bn">Bengali</option>
+                    <option value="mr">Marathi</option>
+                    <option value="gu">Gujarati</option>
+                    <option value="pa">Punjabi</option>
+                    <option value="or">Odia</option>
+                    <option value="as">Assamese</option>
+                </select>
+                <small style="display: block; margin-left: 0px; color: #666; margin-top: 5px;">
+                    💡 Use this if English audio is incorrectly detected as Telugu/Kannada
+                </small>
+            </div>
+            <div>
+                <input type="checkbox" id="clear_cache" name="clear_cache" value="true">
+                <label for="clear_cache">
+                    <strong>🔄 Clear Cache & Force Fresh Transcription</strong> - Ignore cached results and transcribe again
+                </label>
+                <small style="display: block; margin-left: 25px; color: #666; margin-top: 5px;">
+                    ⚠️ Use this if you want to retry with different language settings or if cached results are wrong
+                </small>
+            </div>
+        </div>
+        
+        <div class="hindi-options">
+            <h4>🔧 Hindi Enhancement Options</h4>
+            <div>
+                <input type="checkbox" id="use_hindi_enhancements" name="use_hindi_enhancements" value="true">
+                <label for="use_hindi_enhancements">
+                    <strong>Use Hindi Enhancements</strong> - Enable enhanced Hindi transcription and translation
+                </label>
+            </div>
+            <div>
+                <input type="checkbox" id="use_hinglish" name="use_hinglish" value="true">
+                <label for="use_hinglish">
+                    <strong>Use Hinglish Transcription</strong> - Transcribe Hindi speech to English script (e.g., "Namaste" instead of "नमस्ते")
+                </label>
+            </div>
+            <div>
+                <input type="checkbox" id="use_xglish" name="use_xglish" value="true">
+                <label for="use_xglish">
+                    <strong>🌐 Use X-glish Transcription</strong> - Transcribe Indian languages to English script (Telugish, Tamglish, Kannadish, etc.)
+                </label>
+                <small style="display: block; margin-left: 25px; color: #666; margin-top: 5px;">
+                    Examples: Telugu "నమస్కారం" → "namaskaram", Tamil "வணக்கம்" → "vanakkam", Kannada "ನಮಸ್ಕಾರ" → "namaskara"
+                </small>
+            </div>
+            <div>
+                <input type="checkbox" id="run_debug_analysis" name="run_debug_analysis" value="true">
+                <label for="run_debug_analysis">
+                    <strong>Run Debug Analysis</strong> - Comprehensive Hindi audio analysis and quality assessment
+                </label>
+            </div>
+            <div>
+                <input type="checkbox" id="use_advanced_diarization" name="use_advanced_diarization" value="true">
+                <label for="use_advanced_diarization">
+                    <strong>Advanced Speaker Diarization</strong> - Use ML-based voice fingerprinting for higher accuracy (slower)
+                </label>
+            </div>
+            <div>
+                <input type="checkbox" id="save_preprocessed_audio" name="save_preprocessed_audio" value="true">
+                <label for="save_preprocessed_audio">
+                    <strong>Save Preprocessed Audio</strong> - Save the cleaned audio file for analysis and listening
+                </label>
+            </div>
+            <small style="color: #666;">
+                💡 <strong>Tip:</strong> The system automatically detects Hindi and uses Hinglish transcription. Enable Hindi enhancements and advanced diarization for the best results. Save preprocessed audio to analyze transcription quality.
+            </small>
+        </div>
+        
+        <button type="submit">Transcribe with Speakers</button>
+    </form>
+    
+    {% if cancelled and show_cancellation_message %}
+    <div style="margin-top:20px; padding:15px; background:#ffebee; border-radius:8px; border-left:4px solid #f44336;">
+        <h3 style="margin:0 0 10px 0; color:#c62828;">🛑 Processing Cancelled</h3>
+        <p style="margin:5px 0; color:#666;">Processing was stopped by user request.</p>
+        <p style="margin:5px 0; color:#666;"><strong>File:</strong> {{ filename }}</p>
+        <div style="margin-top: 15px;">
+            <button onclick="resetForm()" 
+                    style="background: #28a745; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; margin-right: 10px;">
+                📁 Upload New File
+            </button>
+            <button onclick="location.reload()" 
+                    style="background: #6c757d; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold;">
+                🔄 Refresh Page
+            </button>
+        </div>
+    </div>
+    {% endif %}
+    
+    {% if result and not cancelled %}
+    <div class="result">
+        <div class="filename">📁 File: {{ filename }}</div>
+        
+        {% if use_hindi_enhancements or run_debug_analysis or use_advanced_diarization or save_preprocessed_audio %}
+            <div class="method-badge {% if use_hindi_enhancements or use_advanced_diarization %}method-enhanced{% else %}method-standard{% endif %}">
+                {% if use_advanced_diarization %}
+                    🤖 Advanced ML Diarization
+                {% elif use_hindi_enhancements %}
+                    {% if speakers_result.auto_hinglish_enabled %}
+                        🔧 Auto Hinglish Processing
+                    {% elif speakers_result.language|lower == "english" %}
+                        🔧 Enhanced Processing (English)
+                    {% else %}
+                        🔧 Enhanced Hindi Processing
+                    {% endif %}
+                {% else %}
+                    {% if speakers_result.auto_hinglish_enabled %}
+                        🔧 Auto Hinglish Processing
+                    {% else %}
+                        📝 Standard Processing
+                    {% endif %}
+                {% endif %}
+                {% if save_preprocessed_audio %}
+                    + 💾 Audio Saved
+                {% endif %}
+            </div>
+        {% endif %}
+        
+        {% if preprocessing_metrics %}
+            <h4>🔧 Preprocessing Analysis</h4>
+            <div class="stats">
+                <strong>Audio Quality:</strong><br>
+                • <strong>SNR:</strong> {{ "%.1f"|format(preprocessing_metrics.snr_db) }} dB<br>
+                {% if preprocessing_metrics.quality_analysis and preprocessing_metrics.quality_analysis.rms is defined %}
+                    • <strong>Signal Strength:</strong> {{ "%.4f"|format(preprocessing_metrics.quality_analysis.rms) }}<br>
+                    • <strong>Duration:</strong> {{ "%.1f"|format(preprocessing_metrics.quality_analysis.duration) }} seconds<br>
+                {% else %}
+                    • <strong>Signal Strength:</strong> <em>Analysis failed</em><br>
+                    • <strong>Duration:</strong> <em>Analysis failed</em><br>
+                {% endif %}
+                <br>
+                <strong>Denoising Decision:</strong><br>
+                {% if preprocessing_metrics.denoising_applied %}
+                    ❌ <span style="color: #dc3545;">Denoising Applied</span><br>
+                    <strong>Reasons:</strong><br>
+                    {% for reason in preprocessing_metrics.denoising_reasons %}
+                        • {{ reason }}<br>
+                    {% endfor %}
+                {% else %}
+                    ✅ <span style="color: #28a745;">Denoising Skipped</span><br>
+                    <em>Audio quality is good enough for transcription</em>
+                {% endif %}
+                
+                {% if preprocessing_metrics.saved_preprocessed_path %}
+                    <br>
+                    <strong>📁 Saved Preprocessed Audio:</strong><br>
+                    • <strong>File:</strong> <code>{{ preprocessing_metrics.saved_preprocessed_path }}</code><br>
+                    • <strong>Purpose:</strong> Listen to this file to analyze transcription quality<br>
+                    • <strong>Location:</strong> <code>Call_recordings_AI/saved_preprocessed_audio/</code>
+                {% endif %}
+            </div>
+        {% endif %}
+        
+        {% if hindi_debug_results and hindi_debug_results.summary %}
+            <h4>🔍 Hindi Debug Analysis</h4>
+            <div class="debug-results">
+                <strong>Quality Scores:</strong><br>
+                • <strong>Audio Quality:</strong> 
+                    <span class="quality-score {% if hindi_debug_results.summary.audio_quality_score >= 70 %}score-good{% elif hindi_debug_results.summary.audio_quality_score >= 40 %}score-moderate{% else %}score-poor{% endif %}">
+                        {{ "%.1f"|format(hindi_debug_results.summary.audio_quality_score) }}/100
+                    </span><br>
+                • <strong>Transcription Quality:</strong> 
+                    <span class="quality-score {% if hindi_debug_results.summary.transcription_quality_score >= 70 %}score-good{% elif hindi_debug_results.summary.transcription_quality_score >= 40 %}score-moderate{% else %}score-poor{% endif %}">
+                        {{ "%.1f"|format(hindi_debug_results.summary.transcription_quality_score) }}/100
+                    </span><br>
+                <br>
+                <strong>Overall Recommendation:</strong> {{ hindi_debug_results.summary.overall_recommendation }}<br>
+                <br>
+                {% if hindi_debug_results.recommendations %}
+                    <strong>Specific Recommendations:</strong><br>
+                    {% for recommendation in hindi_debug_results.recommendations %}
+                        • {{ recommendation }}<br>
+                    {% endfor %}
+                {% endif %}
+            </div>
+        {% endif %}
+        
+        {% if token_usage %}
+            <h4>💰 Token Usage & Cost</h4>
+            <div class="token-usage">
+                <strong>API Usage Breakdown:</strong><br>
+                • <strong>Transcription Tokens:</strong> {{ "{:,}".format(token_usage.transcription_tokens) }}<br>
+                • <strong>Translation Tokens:</strong> {{ "{:,}".format(token_usage.translation_tokens) }}<br>
+                • <strong>Analysis Tokens:</strong> {{ "{:,}".format(token_usage.analysis_tokens or 0) }}<br>
+                • <strong>Total Tokens:</strong> {{ "{:,}".format(token_usage.total_tokens) }}<br>
+                <br>
+                <strong>Cost Breakdown:</strong><br>
+                • <strong>Transcription Cost:</strong> ${{ "%.4f"|format(token_usage.transcription_cost or 0) }}<br>
+                • <strong>Translation Cost:</strong> ${{ "%.4f"|format(token_usage.translation_cost or 0) }}<br>
+                • <strong>Analysis Cost:</strong> ${{ "%.4f"|format(token_usage.analysis_cost or 0) }}<br>
+                • <strong>Total Estimated Cost:</strong> ${{ "%.4f"|format(token_usage.estimated_cost_usd) }}<br>
+                <br>
+                <strong>Processing Summary:</strong><br>
+                • <strong>Transcription:</strong> ✅ Completed<br>
+                {% if token_usage.translation_tokens > 0 %}
+                    • <strong>Translation:</strong> ✅ Completed ({{ "{:,}".format(token_usage.translation_tokens) }} tokens)<br>
+                {% else %}
+                    • <strong>Translation:</strong> ⏭️ Skipped (not needed)<br>
+                {% endif %}
+                {% if token_usage.analysis_tokens and token_usage.analysis_tokens > 0 %}
+                    • <strong>Analysis:</strong> ✅ Completed ({{ "{:,}".format(token_usage.analysis_tokens) }} tokens)<br>
+                {% else %}
+                    • <strong>Analysis:</strong> ⏭️ Skipped<br>
+                {% endif %}
+            </div>
+        {% endif %}
+        
+        {% if speakers_result %}
+            <h4>📊 Processing Statistics</h4>
+            <div class="stats">
+                <strong>Language:</strong> {{ speakers_result.language }}<br>
+                <strong>Duration:</strong> {{ "%.1f"|format(speakers_result.duration) }} seconds<br>
+                <strong>Segments:</strong> {{ speakers_result.segments|length }}<br>
+                <strong>Transcription Method:</strong> {{ speakers_result.transcription_method|title if speakers_result.transcription_method else 'Unknown' }}<br>
+                {% if speakers_result.translation_method %}
+                    <strong>Translation Method:</strong> {{ speakers_result.translation_method|title if speakers_result.translation_method else 'Unknown' }}<br>
+                {% endif %}
+                {% if speakers_result.speaker_stats %}
+                    <strong>Speaker 1 (Agent):</strong> {{ speakers_result.speaker_stats.get('Speaker 1', {}).get('count', 0) }} segments<br>
+                    <strong>Speaker 2 (Caller):</strong> {{ speakers_result.speaker_stats.get('Speaker 2', {}).get('count', 0) }} segments
+                {% endif %}
+            </div>
+            
+            <h4>🎭 Speaker Segments</h4>
+            {% for segment in speakers_result.segments %}
+                <div class="speaker-segment {% if segment.speaker_type == 'Agent' %}agent{% else %}caller{% endif %}">
+                    <div class="speaker-label">
+                        {% if segment.speaker_type == 'Agent' %}
+                            🎧 Agent (Speaker 1)
+                        {% else %}
+                            📞 Caller (Speaker 2)
+                        {% endif %}
+                    </div>
+                    <div class="timestamp">
+                        ⏱️ {{ "%.1f"|format(segment.start) }}s - {{ "%.1f"|format(segment.end) }}s 
+                        (Duration: {{ "%.1f"|format(segment.end - segment.start) }}s)
+                    </div>
+                    <div style="margin-top: 8px;">
+                        {% if speakers_result.auto_hinglish_enabled %}
+                            <strong>Hinglish:</strong> {{ segment.text }}<br>
+                            <strong>English:</strong> {{ segment.translated_text or "No translation needed" }}
+                        {% elif speakers_result.language|lower == "english" %}
+                            <strong>English:</strong> {{ segment.text }}<br>
+                            <strong>Translation:</strong> {{ segment.translated_text or "No translation needed" }}
+                        {% else %}
+                            <strong>Original:</strong> {{ segment.text }}<br>
+                            <strong>English:</strong> {{ segment.translated_text or "Translation not available" }}
+                        {% endif %}
+                    </div>
+                    {% if segment.translation_status %}
+                        <div style="margin-top: 4px; font-size: 0.8em; color: #666;">
+                            Translation Status: {{ segment.translation_status }}
+                            {% if segment.translation_method %}
+                                ({{ segment.translation_method }})
+                            {% endif %}
+                        </div>
+                    {% endif %}
+                </div>
+            {% endfor %}
+        {% else %}
+            <h4>📝 Simple Transcription</h4>
+            <div class="simple-text">
+                <pre>{{ result }}</pre>
+            </div>
+        {% endif %}
+        
+        {% if preprocessed_analysis %}
+        <h4>🎧 Preprocessed Audio Quality Analysis</h4>
+        <div class="stats">
+            <strong>File:</strong> {{ preprocessed_analysis.filename }}<br>
+            <strong>Duration:</strong> {{ "%.1f"|format(preprocessed_analysis.duration_seconds) }} seconds<br>
+            <strong>SNR:</strong> {{ "%.1f"|format(preprocessed_analysis.snr_db) }} dB<br>
+            <strong>Speech Ratio:</strong> {{ "%.2f"|format(preprocessed_analysis.speech_ratio) }}<br>
+            <strong>Silence Ratio:</strong> {{ "%.2f"|format(preprocessed_analysis.silence_ratio) }}<br>
+            <strong>Quality Score:</strong> {{ "%.1f"|format(preprocessed_analysis.quality_score) }}/100<br>
+            <strong>Readiness:</strong> {{ preprocessed_analysis.transcription_readiness.overall }}<br>
+            {% if preprocessed_analysis.transcription_readiness.issues %}
+                <strong>Issues:</strong>
+                <ul>
+                {% for issue in preprocessed_analysis.transcription_readiness.issues %}
+                    <li>{{ issue }}</li>
+                {% endfor %}
+                </ul>
+            {% endif %}
+            {% if preprocessed_analysis.transcription_readiness.recommendations %}
+                <strong>Recommendations:</strong>
+                <ul>
+                {% for rec in preprocessed_analysis.transcription_readiness.recommendations %}
+                    <li>{{ rec }}</li>
+                {% endfor %}
+                </ul>
+            {% endif %}
+        </div>
+        {% endif %}
+        {% if call_analysis and call_analysis.status != "failed" %}
+        <h4>📊 AI Call Analysis</h4>
+        <div class="stats">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                <div>
+                    <h5>🎯 Main Issue</h5>
+                    <p><strong>Description:</strong> {{ call_analysis.main_issue.description }}</p>
+                    <p><strong>Category:</strong> {{ call_analysis.main_issue.category }}</p>
+                    <p><strong>Urgency:</strong> {{ call_analysis.main_issue.urgency }}</p>
+                </div>
+                
+                <div>
+                    <h5>🛠️ Support Given</h5>
+                    <p><strong>Description:</strong> {{ call_analysis.support_given.description }}</p>
+                    <p><strong>Effectiveness:</strong> {{ call_analysis.support_given.effectiveness }}</p>
+                    <p><strong>Steps:</strong></p>
+                    <ul>
+                    {% for step in call_analysis.support_given.steps_taken %}
+                        <li>{{ step }}</li>
+                    {% endfor %}
+                    </ul>
+                </div>
+                
+                <div>
+                    <h5>✅ Actions Taken</h5>
+                    <p><strong>Description:</strong> {{ call_analysis.action_taken.description }}</p>
+                    <p><strong>Status:</strong> {{ call_analysis.action_taken.completion_status }}</p>
+                    <p><strong>Resolution Steps:</strong></p>
+                    <ul>
+                    {% for step in call_analysis.action_taken.resolution_steps %}
+                        <li>{{ step }}</li>
+                    {% endfor %}
+                    </ul>
+                </div>
+                
+                <div>
+                    <h5>😊 Agent Emotion</h5>
+                    <p><strong>Tone:</strong> {{ call_analysis.agent_emotion.overall_tone }}</p>
+                    <p><strong>State:</strong> {{ call_analysis.agent_emotion.emotional_state }}</p>
+                    <p><strong>Communication:</strong> {{ call_analysis.agent_emotion.communication_style }}</p>
+                </div>
+                
+                <div>
+                    <h5>🎯 Issue Resolution</h5>
+                    <p><strong>Resolved:</strong> 
+                        {% if call_analysis.issue_resolution.resolved %}
+                            ✅ Yes
+                        {% else %}
+                            ❌ No
+                        {% endif %}
+                    </p>
+                    <p><strong>Method:</strong> {{ call_analysis.issue_resolution.resolution_method }}</p>
+                    <p><strong>Customer Satisfaction:</strong> {{ call_analysis.issue_resolution.customer_satisfaction }}</p>
+                </div>
+                
+                <div>
+                    <h5>👥 Agent Engagement</h5>
+                    <p><strong>Level:</strong> {{ call_analysis.agent_engagement.level }}</p>
+                    <p><strong>Active Listening:</strong> 
+                        {% if call_analysis.agent_engagement.active_listening %}
+                            ✅ Yes
+                        {% else %}
+                            ❌ No
+                        {% endif %}
+                    </p>
+                    <p><strong>Proactive:</strong> 
+                        {% if call_analysis.agent_engagement.proactive_assistance %}
+                            ✅ Yes
+                        {% else %}
+                            ❌ No
+                        {% endif %}
+                    </p>
+                    <p><strong>Response Time:</strong> {{ call_analysis.agent_engagement.response_time }}</p>
+                </div>
+                
+                <div>
+                    <h5>🎓 Agent Skills</h5>
+                    <p><strong>Technical Knowledge:</strong> {{ call_analysis.agent_skill.technical_knowledge }}</p>
+                    <p><strong>Problem Solving:</strong> {{ call_analysis.agent_skill.problem_solving }}</p>
+                    <p><strong>Communication:</strong> {{ call_analysis.agent_skill.communication }}</p>
+                    <p><strong>Patience:</strong> {{ call_analysis.agent_skill.patience }}</p>
+                </div>
+                
+                <div>
+                    <h5>😊 Customer Satisfaction</h5>
+                    <p><strong>Overall:</strong> {{ call_analysis.customer_satisfaction.overall_satisfaction }}</p>
+                    <p><strong>Recommendation:</strong> {{ call_analysis.customer_satisfaction.willingness_to_recommend }}</p>
+                    <p><strong>Key Factors:</strong></p>
+                    <ul>
+                    {% for factor in call_analysis.customer_satisfaction.key_satisfaction_factors %}
+                        <li>{{ factor }}</li>
+                    {% endfor %}
+                    </ul>
+                </div>
+                
+                <div>
+                    <h5>🎭 Call Tone</h5>
+                    <p><strong>Atmosphere:</strong> {{ call_analysis.call_tone.overall_atmosphere }}</p>
+                    <p><strong>Respect Level:</strong> {{ call_analysis.call_tone.respect_level }}</p>
+                    <p><strong>Conflict Present:</strong> 
+                        {% if call_analysis.call_tone.conflict_present %}
+                            ⚠️ Yes
+                        {% else %}
+                            ✅ No
+                        {% endif %}
+                    </p>
+                </div>
+                
+                <div>
+                    <h5>⭐ Overall Call Quality</h5>
+                    <p><strong>Score:</strong> {{ call_analysis.overall_call_quality.score }}/10</p>
+                    <p><strong>Rating:</strong> {{ call_analysis.overall_call_quality.rating }}</p>
+                    <p><strong>Strengths:</strong></p>
+                    <ul>
+                    {% for strength in call_analysis.overall_call_quality.strengths %}
+                        <li>{{ strength }}</li>
+                    {% endfor %}
+                    </ul>
+                    <p><strong>Areas for Improvement:</strong></p>
+                    <ul>
+                    {% for area in call_analysis.overall_call_quality.areas_for_improvement %}
+                        <li>{{ area }}</li>
+                    {% endfor %}
+                    </ul>
+                </div>
+                
+                <div>
+                    <h5>🏢 Business Insights</h5>
+                    <p><strong>Hotel/Restaurant Code:</strong> {{ call_analysis.business_insights.hotel_restaurant_code }}</p>
+                    <p><strong>Booking Details:</strong> {{ call_analysis.business_insights.booking_details }}</p>
+                    <p><strong>Billing Issues:</strong> {{ call_analysis.business_insights.billing_issues }}</p>
+                    <p><strong>Technical Issues:</strong> {{ call_analysis.business_insights.technical_issues }}</p>
+                </div>
+                
+                <div>
+                    <h5>🔍 Query Analysis</h5>
+                    <p><strong>Primary Query:</strong> {{ call_analysis.query_analysis.primary_query }}</p>
+                    <p><strong>Query Type:</strong> {{ call_analysis.query_analysis.query_type }}</p>
+                    <p><strong>Complexity:</strong> {{ call_analysis.query_analysis.complexity }}</p>
+                    <p><strong>Resolution Time:</strong> {{ call_analysis.query_analysis.resolution_time }}</p>
+                </div>
+            </div>
+        </div>
+        {% elif call_analysis and call_analysis.status == "failed" %}
+        <h4>📊 AI Call Analysis</h4>
+        <div class="stats" style="color: #dc3545;">
+            <p><strong>Analysis Failed:</strong> {{ call_analysis.error }}</p>
+        </div>
+        {% endif %}
+    </div>
+    {% endif %}
+    
+    {% if performance_summary %}
+    <div class="results-section">
+        <h4>⚡ Performance Analysis & Optimizations</h4>
+        <div class="stats">
+            <p><strong>Total Processing Time:</strong> {{ performance_summary.total_processing_time_formatted }}</p>
+            <p><strong>File Size:</strong> {{ "%.2f"|format(performance_summary.performance_metrics.file_size / 1024 / 1024) }} MB</p>
+            {% if performance_summary.performance_metrics.audio_duration > 0 %}
+                <p><strong>Audio Duration:</strong> {{ "%.1f"|format(performance_summary.performance_metrics.audio_duration) }} seconds</p>
+                <p><strong>Processing Rate:</strong> {{ "%.2f"|format(performance_summary.performance_metrics.processing_rate) }}x (real-time)</p>
+            {% endif %}
+            
+            <div style="margin-top: 15px; padding: 10px; background: #e8f5e8; border-radius: 5px; border-left: 4px solid #28a745;">
+                <h5 style="margin: 0 0 10px 0; color: #28a745;">🚀 Performance Optimizations Applied:</h5>
+                <ul style="margin: 0; padding-left: 20px;">
+                    <li><strong>Streaming Upload:</strong> Reduced memory usage for large files</li>
+                    <li><strong>Dynamic Timeouts:</strong> Adjusted based on file size for optimal processing</li>
+                    <li><strong>Parallel Processing:</strong> Transcription and analysis run concurrently</li>
+                    <li><strong>Result Caching:</strong> Identical files processed instantly from cache</li>
+                    <li><strong>Optimized Services:</strong> Enhanced transcription with parallel execution</li>
+                </ul>
+            </div>
+        </div>
+        
+        <h5>📈 Step Breakdown (Slowest First)</h5>
+        <div class="stats">
+            {% for step in performance_summary.step_breakdown %}
+                <p><strong>{{ step.step|title }}:</strong> {{ step.duration_formatted }} ({{ step.percentage }}% of total)</p>
+            {% endfor %}
+        </div>
+        
+        {% if performance_summary.slowest_steps %}
+        <h5>🐌 Performance Bottlenecks</h5>
+        <div class="stats" style="color: #dc3545;">
+            {% for step in performance_summary.slowest_steps %}
+                <p><strong>{{ step.step|title }}:</strong> {{ step.duration_formatted }} ({{ step.percentage }}% of total)</p>
+            {% endfor %}
+        </div>
+        {% endif %}
+        
+        {% if performance_summary.performance_metrics.bottlenecks %}
+        <h5>⚠️ Critical Bottlenecks (>20% of total time)</h5>
+        <div class="stats" style="color: #dc3545;">
+            {% for bottleneck in performance_summary.performance_metrics.bottlenecks %}
+                <p><strong>{{ bottleneck.step|title }}:</strong> {{ bottleneck.duration|round(2) }}s ({{ bottleneck.percentage|round(1) }}% of total)</p>
+            {% endfor %}
+        </div>
+        {% endif %}
+    </div>
+    {% endif %}
+    
+    {% if performance_summary %}
+    <div class="results-section">
+        <h4>📊 Global Results & Downloads</h4>
+        <div class="stats">
+            <div style="margin-bottom: 20px; padding: 15px; background: #e8f5e8; border-radius: 5px; border-left: 4px solid #28a745;">
+                <h5 style="margin: 0 0 10px 0; color: #28a745;">🌍 Global Results CSV</h5>
+                <p style="margin: 5px 0;"><strong>✅ Automatic Saving:</strong> This analysis has been automatically saved to the global results CSV</p>
+                <p style="margin: 5px 0;"><strong>📁 Location:</strong> Call_recordings_AI/.cache/results/global_call_analysis_results.csv</p>
+                <p style="margin: 5px 0;"><strong>🔄 Auto-Append:</strong> All future analyses will be automatically added to this file</p>
+                
+                <div style="margin: 15px 0;">
+                    <a href="/innex/download-global-results" 
+                       class="download-btn" 
+                       style="background: #007bff; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; display: inline-block; font-weight: bold;">
+                        🌍 Download Global Results CSV (All Analyses)
+                    </a>
+                </div>
+            </div>
+            
+            <div style="margin-bottom: 20px; padding: 15px; background: #f8f9fa; border-radius: 5px; border-left: 4px solid #6c757d;">
+                <h5 style="margin: 0 0 10px 0; color: #6c757d;">📄 Individual Analysis Report</h5>
+                <p style="margin: 5px 0;"><strong>Filename:</strong> {{ filename|replace('.wav', '.csv')|replace('.mp3', '.csv')|replace('.m4a', '.csv') }}</p>
+                
+                <div style="margin: 15px 0;">
+                    <a href="/innex/download-analysis/{{ filename|replace('.wav', '')|replace('.mp3', '')|replace('.m4a', '') }}" 
+                       class="download-btn" 
+                       style="background: #28a745; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block;">
+                        📥 Download This Analysis Only
+                    </a>
+                </div>
+            </div>
+            
+            <p style="color: #28a745;"><strong>✅ Both reports include:</strong></p>
+            <ul style="margin-left: 20px; color: #666;">
+                <li>Complete call analysis (main issue, support given, actions taken)</li>
+                <li>Agent performance metrics (emotion, engagement, skills)</li>
+                <li>Customer satisfaction details</li>
+                <li>Business insights and query analysis</li>
+                <li>Full transcription and translation text</li>
+                <li>Performance timing breakdown</li>
+                <li>Token usage and cost analysis</li>
+                <li>Critical bottlenecks identification</li>
+                <li><strong>Global CSV:</strong> Unique Analysis ID, File Hash, Cache Status</li>
+            </ul>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<script>
+let processingStopped = false;
+let currentRequest = null;
+
+document.querySelector('.upload-form').addEventListener('submit', function(e) {
+  // Reset stop flag
+  processingStopped = false;
+  
+  // Reset server-side cancellation flag
+  fetch('/innex/reset-cancellation', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    }
+  })
+  .then(response => response.json())
+  .then(data => {
+    console.log('Cancellation flag reset:', data);
+  })
+  .catch(error => {
+    console.error('Error resetting cancellation flag:', error);
+  });
+  
+  // Show progress status
+  document.getElementById('progress-status').style.display = 'block';
+  document.getElementById('stop-message').style.display = 'none';
+  
+  // Store the current request for potential cancellation
+  currentRequest = e.target;
+  
+  // Add a small delay to show the stop button
+  setTimeout(function() {
+    if (!processingStopped) {
+      document.getElementById('stop-processing-btn').style.display = 'inline-block';
+    }
+  }, 1000);
+});
+
+function stopProcessing() {
+  processingStopped = true;
+  
+  // Hide the stop button and show message
+  document.getElementById('stop-processing-btn').style.display = 'none';
+  document.getElementById('stop-message').style.display = 'block';
+  
+  // Send cancellation request to server
+  fetch('/innex/cancel-processing', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    }
+  })
+  .then(response => response.json())
+  .then(data => {
+    console.log('Cancellation request sent:', data);
+  })
+  .catch(error => {
+    console.error('Error sending cancellation request:', error);
+  });
+  
+  // Update the progress message to show cancellation in progress
+  const progressDiv = document.getElementById('progress-status');
+  progressDiv.innerHTML = `
+    <div style="background: #fff3cd; border: 1px solid #ffeaa7; padding: 20px; border-radius: 8px; margin-bottom: 15px;">
+      <b>🛑 Stopping Processing...</b>
+      <div style="margin-top: 15px; color: #856404;">
+        <p>⏳ Please wait while the current operation is safely stopped.</p>
+        <p>🔄 You will be able to upload a new file once stopping is complete.</p>
+        <p>📝 The page will refresh automatically when stopping is complete.</p>
+      </div>
+    </div>
+  `;
+  
+  // Try to cancel the current request if possible
+  if (currentRequest && currentRequest.abort) {
+    try {
+      currentRequest.abort();
+    } catch (e) {
+      console.log('Request cancellation not supported');
+    }
+  }
+  
+  // Log the stop action
+  console.log('Processing stopped by user');
+  
+  // Auto-refresh after a short delay to show the clean state
+  setTimeout(function() {
+    location.reload();
+  }, 2000);
+}
+
+function resetForm() {
+  // Reset the form and hide progress status
+  document.querySelector('.upload-form').reset();
+  document.getElementById('progress-status').style.display = 'none';
+  processingStopped = false;
+  currentRequest = null;
+  
+  // Reset server-side cancellation flag
+  fetch('/innex/reset-cancellation', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    }
+  })
+  .then(response => response.json())
+  .then(data => {
+    console.log('Cancellation flag reset for new upload:', data);
+  })
+  .catch(error => {
+    console.error('Error resetting cancellation flag:', error);
+  });
+  
+  // Scroll to top of form
+  document.querySelector('.upload-form').scrollIntoView({ behavior: 'smooth' });
+}
+
+// Add keyboard shortcut for stopping (Ctrl+Shift+S)
+document.addEventListener('keydown', function(e) {
+  if (e.ctrlKey && e.shiftKey && e.key === 'S') {
+    e.preventDefault();
+    if (document.getElementById('progress-status').style.display !== 'none') {
+      stopProcessing();
+    }
+  }
+});
+
+// Show keyboard shortcut info
+document.addEventListener('DOMContentLoaded', function() {
+  const form = document.querySelector('.upload-form');
+  const shortcutInfo = document.createElement('div');
+  shortcutInfo.style.cssText = 'margin-top: 10px; font-size: 0.9em; color: #666; text-align: center;';
+  shortcutInfo.innerHTML = '💡 <strong>Tip:</strong> Press <kbd>Ctrl+Shift+S</kbd> to stop processing';
+  form.appendChild(shortcutInfo);
+});
+
+function resetGlobalCSV() {
+  if (confirm('⚠️ Are you sure you want to reset the global CSV?\n\n' +
+              'This will:\n' +
+              '✅ Create a backup of your current data\n' +
+              '🗑️ Delete all existing analysis records\n' +
+              '🆕 Start fresh with a new empty CSV\n\n' +
+              'This action cannot be undone!')) {
+    
+    // Show loading state
+    const btn = event.target;
+    const originalText = btn.innerHTML;
+    btn.innerHTML = '⏳ Resetting...';
+    btn.disabled = true;
+    
+    // Send reset request
+    fetch('/innex/reset-global-csv', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      }
+    })
+    .then(response => response.json())
+    .then(data => {
+      if (data.status === 'success') {
+        alert('✅ Global CSV reset successfully!\n\n' +
+              '📁 Backup created: ' + (data.backup_created || 'No backup needed') + '\n' +
+              '🆕 Fresh CSV ready for new data\n\n' +
+              'You can now upload new files to start fresh.');
+        
+        // Optionally refresh the page to show updated state
+        if (confirm('Would you like to refresh the page to see the updated state?')) {
+          location.reload();
+        }
+      } else {
+        alert('❌ Error resetting CSV: ' + data.message);
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+      }
+    })
+    .catch(error => {
+      alert('❌ Error resetting CSV: ' + error.message);
+      btn.innerHTML = originalText;
+      btn.disabled = false;
+    });
+  }
+}
+</script>
+</body>
+</html> 

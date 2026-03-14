@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ title }}</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+        
+        .content {
+            padding: 40px;
+        }
+        
+        .session-info {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .session-info h2 {
+            color: #333;
+            margin-bottom: 15px;
+        }
+        
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+        
+        .info-item {
+            background: white;
+            padding: 15px;
+            border-radius: 6px;
+            border-left: 4px solid #4facfe;
+        }
+        
+        .info-item .label {
+            font-weight: 600;
+            color: #555;
+            margin-bottom: 5px;
+        }
+        
+        .info-item .value {
+            color: #333;
+            font-size: 1.1em;
+        }
+        
+        .transcription-section {
+            margin-bottom: 30px;
+        }
+        
+        .transcription-section h2 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+        
+        .transcription-text {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 20px;
+            border: 1px solid #e1e5e9;
+            white-space: pre-wrap;
+            line-height: 1.6;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        
+        .segments-section {
+            margin-bottom: 30px;
+        }
+        
+        .segments-section h2 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+        
+        .segment {
+            background: white;
+            border: 1px solid #e1e5e9;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 10px;
+        }
+        
+        .segment-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        
+        .speaker {
+            background: #4facfe;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-weight: 600;
+            font-size: 0.9em;
+        }
+        
+        .timestamp {
+            color: #666;
+            font-size: 0.9em;
+        }
+        
+        .segment-text {
+            color: #333;
+            line-height: 1.5;
+        }
+        
+        .stats-section {
+            margin-bottom: 30px;
+        }
+        
+        .stats-section h2 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+        }
+        
+        .stat-card {
+            background: white;
+            border: 1px solid #e1e5e9;
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+        }
+        
+        .stat-card .number {
+            font-size: 2em;
+            font-weight: 600;
+            color: #4facfe;
+            margin-bottom: 5px;
+        }
+        
+        .stat-card .label {
+            color: #666;
+            font-size: 0.9em;
+        }
+        
+        .actions {
+            text-align: center;
+            margin-top: 30px;
+        }
+        
+        .btn {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+            margin: 0 10px;
+            transition: transform 0.2s ease;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+        }
+        
+        .btn-secondary {
+            background: #6c757d;
+        }
+        
+        .status-badge {
+            display: inline-block;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.9em;
+            font-weight: 600;
+        }
+        
+        .status-success {
+            background: #d4edda;
+            color: #155724;
+        }
+        
+        .status-error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        
+        .status-processing {
+            background: #fff3cd;
+            color: #856404;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎙️ Transcription Results</h1>
+            <p>{{ session_info.filename }}</p>
+        </div>
+        
+        <div class="content">
+            <div class="session-info">
+                <h2>Session Information</h2>
+                <div class="info-grid">
+                    <div class="info-item">
+                        <div class="label">Session ID</div>
+                        <div class="value">{{ session_id }}</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="label">Provider</div>
+                        <div class="value">{{ session_info.provider_used or session_info.provider }}</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="label">Model</div>
+                        <div class="value">{{ session_info.model_used or session_info.model }}</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="label">Status</div>
+                        <div class="value">
+                            <span class="status-badge status-{{ session_info.status or 'unknown' }}">
+                                {{ session_info.status.title() if session_info.status else 'Unknown' }}
+                            </span>
+                        </div>
+                    </div>
+                    <div class="info-item">
+                        <div class="label">Language</div>
+                        <div class="value">{{ result.language_name or 'Unknown' }}</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="label">Duration</div>
+                        <div class="value">{{ "%.1f"|format(result.duration) }} seconds</div>
+                    </div>
+                </div>
+            </div>
+            
+            {% if result.status == 'success' %}
+            <div class="transcription-section">
+                <h2>Transcription</h2>
+                <div class="transcription-text">{{ result.transcribed_text }}</div>
+            </div>
+            
+            {% if result.segments %}
+            <div class="segments-section">
+                <h2>Segments with Speakers</h2>
+                {% for segment in result.segments %}
+                <div class="segment">
+                    <div class="segment-header">
+                        <span class="speaker">{{ segment.speaker }}</span>
+                        <span class="timestamp">{{ "%.1f"|format(segment.start) }}s - {{ "%.1f"|format(segment.end) }}s</span>
+                    </div>
+                    <div class="segment-text">{{ segment.text }}</div>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+            
+            {% if result.speaker_stats %}
+            <div class="stats-section">
+                <h2>Speaker Statistics</h2>
+                <div class="stats-grid">
+                    {% for speaker, stats in result.speaker_stats.items() %}
+                    <div class="stat-card">
+                        <div class="number">{{ stats.segment_count }}</div>
+                        <div class="label">{{ speaker }}<br>Segments</div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+            
+            {% else %}
+            <div class="transcription-section">
+                <h2>Error</h2>
+                <div class="transcription-text" style="color: #721c24; background: #f8d7da;">
+                    {{ result.error or 'An error occurred during processing' }}
+                </div>
+            </div>
+            {% endif %}
+            
+            <div class="actions">
+                <a href="/download/{{ session_id }}" class="btn">📥 Download Results</a>
+                <a href="/" class="btn btn-secondary">🔄 Process Another File</a>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
